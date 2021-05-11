@@ -1,6 +1,3 @@
-import os
-os.chdir(r"C:\Users\agad4\OneDrive\Documents\python_work\fantasy football\dfs")
-
 import numpy as np
 
 from sklearn.preprocessing import StandardScaler
