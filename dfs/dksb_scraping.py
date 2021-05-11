@@ -19,10 +19,9 @@ class ScrapeDK():
         soup_today = self.soup_setup('https://sportsbook.draftkings.com/leagues/football/3?category=game-lines&subcategory=game')
         
         games = {}
-        for i in range(len(soup_today.findAll('span', {'class':'event-cell__name'}))):
-            tm = soup_today.findAll('span', {'class':'event-cell__name'})[i]
-            dkRe = re.search('>.+<', str(tm))
-            tm = dkRe.group().replace('>', '').replace('<', '')
+        tm_soup = soup_today.findAll('span', {'class':'event-cell__name'})
+        for i in range(len(tm_soup)):
+            tm = tm_soup[i].text
             ny_la = ['NY Giants', 'NY Jets', 'LA Chargers']
             if tm in ny_la:
                 tm = tm[:4]
@@ -30,19 +29,16 @@ class ScrapeDK():
             else:
                 tm = tm.split(sep=' ')[0]
             
-            games[i] = [tm]
+            games[i] = tm
             
         x = 0
         y = 0
-        for i in range(len(soup_today.findAll('span', {'class':'sportsbook-outcome-cell__line'}))):
+        odds_soup = soup_today.findAll('span', {'class':'sportsbook-outcome-cell__line'})
+        for i in range(len(odds_soup)):
             if i % 2 != 0:
-                sp1 = soup_today.findAll('span', {'class':'sportsbook-outcome-cell__line'})[i-1]
-                dkRe = re.search('>.+<', str(sp1))
-                sp1 = float(dkRe.group().replace('>', '').replace('<', '').replace('+', ''))
+                sp1 = float(odds_soup[i-1].text.replace('+', ''))
                 
-                sp2 = soup_today.findAll('span', {'class':'sportsbook-outcome-cell__line'})[i]
-                dkRe = re.search('>.+<', str(sp2))
-                sp2 = float(dkRe.group().replace('>', '').replace('<', '').replace('+', ''))
+                sp2 = float(odds_soup[i].text.replace('+', ''))
                 
                 if (sp1 < 0) | (sp2 < 0):    
                     games[x].append(sp1)
@@ -72,68 +68,3 @@ class ScrapeDK():
         
         return games
     
-    def epl(self, games=1):
-        
-        soup_today = self.soup_setup('https://sportsbook.draftkings.com/leagues/soccer/53591936?category=game-lines&subcategory=money-line-(regular-time)')
-        
-        tms = []
-        odds = []
-        for i in range(3*games):
-            dkRe = re.search('>.+<', str(soup_today.findAll('span', {'class':'sportsbook-outcome-cell__label'})[i]))
-            sauce = dkRe.group().replace('>', '').replace('<', '')
-            tms.append(sauce)
-            dkRe = re.search('>.+<', str(soup_today.findAll('span', {'class':'sportsbook-odds american default-color'})[i]))
-            brisket = float(dkRe.group().replace('>', '').replace('<', '').replace('+', ''))
-            odds.append(brisket)
-        
-        tm_names = {'Manchester United':'Manchester Utd', 'Sheffield United':'Sheffield Utd',
-                    'Newcastle':'Newcastle Utd', 'West Bromwich': 'West Brom'}
-        tms = [tm_names[i] if i in tm_names else i for i in tms]
-        odds = [round(1+(i/100),2) if i > 0 else round(1-(100/i),2) for i in odds]
-        
-        ale = []
-        for i in range(0, len(tms), 3):
-            ale.append([tms[i], tms[i+2], odds[i], odds[i+1], odds[i+2]])
-            
-        return ale
-    
-    def nba(self, games=None):
-        
-        soup_today = self.soup_setup('https://sportsbook.draftkings.com/leagues/basketball/103?category=game-lines&subcategory=game')
-        
-        tms = []
-        odds = []
-        spreads = []
-        totals = []
-        if games:
-            x = games*2
-            y = games*4
-        else:
-            x = len(soup_today.findAll('span', {'class':'event-cell__name'}))
-            y = len(soup_today.findAll('span', {'class':'sportsbook-outcome-cell__line'}))
-        for i in range(x):
-            dkRe = re.search('>.+<', str(soup_today.findAll('span', {'class':'event-cell__name'})[i]))
-            salmon = dkRe.group().replace('>', '').replace('<', '')
-            salmon = salmon.replace(' ', '')[:3]
-            if salmon == 'CHA':
-                salmon = 'CHO'
-            tms.append(salmon)
-        for i in range(y):
-            dkRe = re.search('>.+<', str(soup_today.findAll('span', {'class':'sportsbook-outcome-cell__line'})[i]))
-            tuna = float(dkRe.group().replace('>', '').replace('<', '').replace('+', ''))
-            if tuna < 100:
-                spreads.append(tuna)
-            else:
-                totals.append(tuna) 
-        for i in range(len(spreads)):
-            if i % 2 == 0:
-                odds.append([spreads[i], totals[i], 0])
-            else:
-                odds.append([spreads[i], totals[i], 1])
-
-        trout = {}
-        for x in range(len(tms)):
-            trout[tms[x]] = odds[x]
-            
-        return trout
-        
